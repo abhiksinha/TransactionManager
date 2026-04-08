@@ -20,10 +20,10 @@ func New() *Server {
 		router: chi.NewRouter(),
 	}
 
-	s.router.Use(middleware.Logger)
-	s.router.Use(middleware.Recoverer)
 	s.router.Use(middleware.RequestID)
 	s.router.Use(middleware.RealIP)
+	s.router.Use(middleware.Logger)
+	s.router.Use(middleware.Recoverer)
 
 	s.router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

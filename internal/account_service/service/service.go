@@ -22,32 +22,24 @@ type AccountService interface {
 // accountService encapsulates the business logic for accounts.
 type accountService struct {
 	repo   *repo.Repository
-	logger *zap.Logger
+	logger *logger.Logger
 }
 
 // NewAccountService creates a new AccountService.
-func NewAccountService(repo *repo.Repository, logger *zap.Logger) AccountService {
+func NewAccountService(repo *repo.Repository, logger *logger.Logger) AccountService {
 	return &accountService{repo: repo, logger: logger}
 }
 
 func (s *accountService) CreateAccount(ctx context.Context, req contracts.CreateAccountRequest) (*contracts.AccountResponse, error) {
-	log := logger.FromContext(ctx, s.logger)
-
-	existing, err := s.repo.GetByDocumentNumber(req.DocumentNumber)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		log.Error("Error checking for existing account", zap.Error(err))
+	if err := s.verifyCreateAccount(ctx, req); err != nil {
 		return nil, err
-	}
-	if err == nil && existing.ID != 0 {
-		log.Warn("Attempted to create a duplicate account", zap.String("document_number", req.DocumentNumber))
-		return nil, public_response.ErrDuplicateEntry
 	}
 
 	account := &model.Account{DocumentNumber: req.DocumentNumber}
 	if err := s.repo.ExecTxn(func(txnRepo *repo.Repository) error {
 		return s.repo.CreateAccount(account)
 	}); err != nil {
-		log.Error("Error during account creation transaction", zap.Error(err))
+		s.logger.Error(ctx, "Error during account creation transaction", zap.Error(err))
 		return nil, err
 	}
 
@@ -57,16 +49,27 @@ func (s *accountService) CreateAccount(ctx context.Context, req contracts.Create
 	}, nil
 }
 
-func (s *accountService) GetAccountByID(ctx context.Context, id int64) (*contracts.AccountResponse, error) {
-	log := logger.FromContext(ctx, s.logger)
+func (s *accountService) verifyCreateAccount(ctx context.Context, req contracts.CreateAccountRequest) error {
+	existing, err := s.repo.GetByDocumentNumber(req.DocumentNumber)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		s.logger.Error(ctx, "Error checking for existing account", zap.Error(err))
+		return err
+	}
+	if err == nil && existing.ID != 0 {
+		s.logger.Warn(ctx, "Attempted to create a duplicate account", zap.String("document_number", req.DocumentNumber))
+		return public_response.ErrDuplicateEntry
+	}
+	return nil
+}
 
+func (s *accountService) GetAccountByID(ctx context.Context, id int64) (*contracts.AccountResponse, error) {
 	account, err := s.repo.GetByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Warn("Account not found", zap.Int64("id", id))
+			s.logger.Warn(ctx, "Account not found", zap.Int64("id", id))
 			return nil, public_response.ErrNotFound
 		}
-		log.Error("Error fetching account", zap.Error(err))
+		s.logger.Error(ctx, "Error fetching account", zap.Error(err))
 		return nil, err
 	}
 

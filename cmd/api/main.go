@@ -40,7 +40,7 @@ func main() {
 	accountSvc := accountservice.NewAccountService(accountRepo, appLogger)
 
 	transactionRepo := transactionrepo.NewRepository(db)
-	transactionSvc := transactionservice.NewTransactionService(transactionRepo, accountRepo, appLogger)
+	transactionSvc := transactionservice.NewTransactionService(transactionRepo, accountSvc, appLogger)
 
 	srv := server.New()
 	root := chi.NewRouter()

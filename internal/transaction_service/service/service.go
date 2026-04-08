@@ -23,44 +23,28 @@ type TransactionService interface {
 type transactionService struct {
 	repo       *repo.Repository
 	accountSvc accountservice.AccountService
-	logger     *zap.Logger
+	logger     *logger.Logger
 }
 
 // NewTransactionService creates a new TransactionService.
-func NewTransactionService(repo *repo.Repository, accountSvc accountservice.AccountService, logger *zap.Logger) TransactionService {
+func NewTransactionService(repo *repo.Repository, accountSvc accountservice.AccountService, logger *logger.Logger) TransactionService {
 	return &transactionService{repo: repo, accountSvc: accountSvc, logger: logger}
 }
 
 func (s *transactionService) CreateTransaction(ctx context.Context, req contracts.CreateTransactionRequest) (*contracts.TransactionResponse, error) {
-	log := logger.FromContext(ctx, s.logger)
-
-	if _, err := s.accountSvc.GetAccountByID(ctx, req.AccountID); err != nil {
-		if errors.Is(err, public_response.ErrNotFound) {
-			log.Warn("Account not found", zap.Int64("account_id", req.AccountID))
-			return nil, public_response.ErrNotFound
-		}
-		log.Error("Error fetching account", zap.Error(err))
-		return nil, err
-	}
-
-	opType, err := s.repo.GetOperationTypeByID(req.OperationTypeID)
+	opType, err := s.verify(ctx, req)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Warn("Operation type not found", zap.Int64("operation_type_id", req.OperationTypeID))
-			return nil, public_response.ErrNotFound
-		}
-		log.Error("Error fetching operation type", zap.Error(err))
 		return nil, err
 	}
 
 	amountMinor, err := amountToMinorUnits(req.Amount)
 	if err != nil {
-		log.Warn("Invalid transaction amount", zap.Error(err))
+		s.logger.Warn(ctx, "Invalid transaction amount", zap.Error(err))
 		return nil, public_response.ErrValidation
 	}
 
 	if opType.TransactionType != transactionTypeDebit && opType.TransactionType != transactionTypeCredit {
-		log.Warn("Invalid transaction type on operation type", zap.String("transaction_type", opType.TransactionType))
+		s.logger.Warn(ctx, "Invalid transaction type on operation type", zap.String("transaction_type", opType.TransactionType))
 		return nil, public_response.ErrValidation
 	}
 
@@ -74,7 +58,7 @@ func (s *transactionService) CreateTransaction(ctx context.Context, req contract
 	if err := s.repo.ExecTxn(func(txnRepo *repo.Repository) error {
 		return s.repo.CreateTransaction(txn)
 	}); err != nil {
-		log.Error("Error creating transaction", zap.Error(err))
+		s.logger.Error(ctx, "Error creating transaction", zap.Error(err))
 		return nil, err
 	}
 
@@ -85,4 +69,27 @@ func (s *transactionService) CreateTransaction(ctx context.Context, req contract
 		Amount:          signedAmount(amountMinor, opType.TransactionType),
 		EventDate:       txn.EventDate,
 	}, nil
+}
+
+func (s *transactionService) verify(ctx context.Context, req contracts.CreateTransactionRequest) (*model.OperationType, error) {
+	if _, err := s.accountSvc.GetAccountByID(ctx, req.AccountID); err != nil {
+		if errors.Is(err, public_response.ErrNotFound) {
+			s.logger.Warn(ctx, "Account not found", zap.Int64("account_id", req.AccountID))
+			return nil, public_response.ErrNotFound
+		}
+		s.logger.Error(ctx, "Error fetching account", zap.Error(err))
+		return nil, err
+	}
+
+	opType, err := s.repo.GetOperationTypeByID(req.OperationTypeID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			s.logger.Warn(ctx, "Operation type not found", zap.Int64("operation_type_id", req.OperationTypeID))
+			return nil, public_response.ErrNotFound
+		}
+		s.logger.Error(ctx, "Error fetching operation type", zap.Error(err))
+		return nil, err
+	}
+
+	return opType, nil
 }
