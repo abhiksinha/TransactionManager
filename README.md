@@ -14,6 +14,18 @@ Stop everything:
 
 **cURL Examples**
 
+**E2E Tests**
+
+Make sure the stack is running first:
+```bash
+./run
+```
+
+Then run:
+```bash
+go test ./e2e
+```
+
 Base URL: `http://localhost:8080`
 
 Create account:
