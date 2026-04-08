@@ -4,12 +4,6 @@
 
 Prerequisites:
 - Docker installed (Docker Desktop or Docker Engine + Compose).
-- Go toolchain (for `go mod tidy` and tests).
-
-Before first run:
-```bash
-go mod tidy
-```
 
 Run the stack (builds images, boots DB, runs migrations, then starts API):
 ```bash
