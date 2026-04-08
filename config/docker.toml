@@ -1,0 +1,17 @@
+[app]
+    env = "dev"
+    service_name = "TransactionManager"
+    host = "0.0.0.0"
+    port = "8080"
+
+[database]
+    dialect = "postgres"
+    host = "postgres"
+    port = 5432
+    username = "postgres"
+    password = "postgres"
+    ssl_mode = "disable"
+    name = "transaction_manager"
+    maxopenconns = 10
+    maxidleconns = 5
+    connmaxlifetime = 120 # in seconds
