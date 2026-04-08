@@ -1,5 +1,17 @@
 # TransactionManager
 
+**Quick Start (Docker)**
+
+Start (builds images, boots DB, runs migrations, then starts API):
+```bash
+./run
+```
+
+Stop everything:
+```bash
+./stop
+```
+
 **cURL Examples**
 
 Base URL: `http://localhost:8080`

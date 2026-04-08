@@ -3,17 +3,15 @@ FROM golang:1.24
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates postgresql-client \
+    ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 COPY go.mod go.sum ./
 RUN go mod download
-
-RUN go install github.com/air-verse/air@v1.61.5
 
 COPY . .
 RUN cp ./config/docker.toml ./config/default.toml
 
 EXPOSE 8080
 
-CMD ["air", "-c", ".air.toml"]
+CMD ["go", "run", "./cmd/api"]

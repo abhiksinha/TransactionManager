@@ -10,7 +10,35 @@ services:
       - "5432:5432"
     volumes:
       - transaction-manager-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-transaction_manager}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     restart: always
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: transaction-manager-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["go", "run", "./cmd/migrations", "up"]
+    restart: "no"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: transaction-manager-web
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
 
 volumes:
   transaction-manager-db-data:
