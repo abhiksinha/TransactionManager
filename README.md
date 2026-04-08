@@ -15,6 +15,10 @@ Stop everything:
 ./stop
 ```
 
+Notes:
+- On Windows, PowerShell/CMD won't run `./run`. Use Git Bash or WSL, or run `docker compose up --build -d` directly.
+- On macOS, `./run` should work with Docker Desktop (no `sudo`).
+
 Base URL: `http://localhost:8080`
 
 Create account

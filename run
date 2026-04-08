@@ -1,4 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-sudo docker compose up --build -d
+os="$(uname -s)"
+
+is_windows() {
+	case "$os" in
+		MINGW*|MSYS*|CYGWIN*) return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
+is_macos() {
+	[[ "$os" == "Darwin" ]]
+}
+
+run_compose() {
+	if docker info >/dev/null 2>&1; then
+		docker compose up --build -d
+		return
+	fi
+	sudo docker compose up --build -d
+}
+
+if is_windows || is_macos; then
+	docker compose up --build -d
+else
+	run_compose
+fi
