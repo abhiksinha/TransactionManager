@@ -13,11 +13,11 @@ import (
 
 // AccountHandlerServer is the HTTP layer.
 type AccountHandlerServer struct {
-	service *service.AccountService
+	service service.AccountService
 }
 
 // NewAccountHandlerServer creates a new handler and registers its routes.
-func NewAccountHandlerServer(router chi.Router, svc *service.AccountService) *AccountHandlerServer {
+func NewAccountHandlerServer(router chi.Router, svc service.AccountService) *AccountHandlerServer {
 	s := &AccountHandlerServer{service: svc}
 	RegisterRoutes(router, s)
 	return s

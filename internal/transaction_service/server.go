@@ -12,11 +12,11 @@ import (
 
 // TransactionHandlerServer is the HTTP layer.
 type TransactionHandlerServer struct {
-	service *service.TransactionService
+	service service.TransactionService
 }
 
 // NewTransactionHandlerServer creates a new handler and registers its routes.
-func NewTransactionHandlerServer(router chi.Router, svc *service.TransactionService) *TransactionHandlerServer {
+func NewTransactionHandlerServer(router chi.Router, svc service.TransactionService) *TransactionHandlerServer {
 	s := &TransactionHandlerServer{service: svc}
 	RegisterRoutes(router, s)
 	return s

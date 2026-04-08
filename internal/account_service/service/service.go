@@ -13,18 +13,24 @@ import (
 	"gorm.io/gorm"
 )
 
-// AccountService encapsulates the business logic for accounts.
-type AccountService struct {
+// AccountService defines the behavior for account operations.
+type AccountService interface {
+	CreateAccount(ctx context.Context, req contracts.CreateAccountRequest) (*contracts.AccountResponse, error)
+	GetAccountByID(ctx context.Context, id int64) (*contracts.AccountResponse, error)
+}
+
+// accountService encapsulates the business logic for accounts.
+type accountService struct {
 	repo   *repo.Repository
 	logger *zap.Logger
 }
 
 // NewAccountService creates a new AccountService.
-func NewAccountService(repo *repo.Repository, logger *zap.Logger) *AccountService {
-	return &AccountService{repo: repo, logger: logger}
+func NewAccountService(repo *repo.Repository, logger *zap.Logger) AccountService {
+	return &accountService{repo: repo, logger: logger}
 }
 
-func (s *AccountService) CreateAccount(ctx context.Context, req contracts.CreateAccountRequest) (*contracts.AccountResponse, error) {
+func (s *accountService) CreateAccount(ctx context.Context, req contracts.CreateAccountRequest) (*contracts.AccountResponse, error) {
 	log := logger.FromContext(ctx, s.logger)
 
 	existing, err := s.repo.GetByDocumentNumber(req.DocumentNumber)
@@ -51,7 +57,7 @@ func (s *AccountService) CreateAccount(ctx context.Context, req contracts.Create
 	}, nil
 }
 
-func (s *AccountService) GetAccountByID(ctx context.Context, id int64) (*contracts.AccountResponse, error) {
+func (s *accountService) GetAccountByID(ctx context.Context, id int64) (*contracts.AccountResponse, error) {
 	log := logger.FromContext(ctx, s.logger)
 
 	account, err := s.repo.GetByID(id)

@@ -1,7 +1,7 @@
 package service
 
 import (
-	accountmodel "TransactionManager/internal/account_service/model"
+	accountservice "TransactionManager/internal/account_service/service"
 	"TransactionManager/internal/transaction_service/contracts"
 	"TransactionManager/internal/transaction_service/model"
 	"TransactionManager/internal/transaction_service/repo"
@@ -9,34 +9,33 @@ import (
 	"TransactionManager/packages/public_response"
 	"context"
 	"errors"
-	"time"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
-// AccountReader provides account lookup for validation.
-type AccountReader interface {
-	GetByID(id int64) (*accountmodel.Account, error)
+// TransactionService defines the behavior for transaction operations.
+type TransactionService interface {
+	CreateTransaction(ctx context.Context, req contracts.CreateTransactionRequest) (*contracts.TransactionResponse, error)
 }
 
-// TransactionService encapsulates the business logic for transactions.
-type TransactionService struct {
-	repo        *repo.Repository
-	accountRepo AccountReader
-	logger      *zap.Logger
+// transactionService encapsulates the business logic for transactions.
+type transactionService struct {
+	repo       *repo.Repository
+	accountSvc accountservice.AccountService
+	logger     *zap.Logger
 }
 
 // NewTransactionService creates a new TransactionService.
-func NewTransactionService(repo *repo.Repository, accountRepo AccountReader, logger *zap.Logger) *TransactionService {
-	return &TransactionService{repo: repo, accountRepo: accountRepo, logger: logger}
+func NewTransactionService(repo *repo.Repository, accountSvc accountservice.AccountService, logger *zap.Logger) TransactionService {
+	return &transactionService{repo: repo, accountSvc: accountSvc, logger: logger}
 }
 
-func (s *TransactionService) CreateTransaction(ctx context.Context, req contracts.CreateTransactionRequest) (*contracts.TransactionResponse, error) {
+func (s *transactionService) CreateTransaction(ctx context.Context, req contracts.CreateTransactionRequest) (*contracts.TransactionResponse, error) {
 	log := logger.FromContext(ctx, s.logger)
 
-	if _, err := s.accountRepo.GetByID(req.AccountID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	if _, err := s.accountSvc.GetAccountByID(ctx, req.AccountID); err != nil {
+		if errors.Is(err, public_response.ErrNotFound) {
 			log.Warn("Account not found", zap.Int64("account_id", req.AccountID))
 			return nil, public_response.ErrNotFound
 		}
