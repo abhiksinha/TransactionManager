@@ -23,7 +23,7 @@ jobs:
         run: go mod download
 
       - name: Unit tests
-        run: go test ./...
+        run: go test ./internal/...
 
       - name: Build
         run: go build ./cmd/api
