@@ -45,3 +45,7 @@ func signedAmount(amountMinor int64, transactionType string) float64 {
 	}
 	return amount
 }
+
+func amountFromMinorUnits(amountMinor int64) float64 {
+	return float64(amountMinor) / 100.0
+}

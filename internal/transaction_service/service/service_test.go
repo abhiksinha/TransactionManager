@@ -77,6 +77,38 @@ func TestTransactionServiceCreateTransaction(t *testing.T) {
 	}
 }
 
+func TestTransactionServiceCreateTransactionDebitStoresNegative(t *testing.T) {
+	db := newTxnTestDB(t, t.Name())
+	if err := db.Create(&model.OperationType{ID: 1, Description: "Normal Purchase", TransactionType: "debit"}).Error; err != nil {
+		t.Fatalf("seed op type: %v", err)
+	}
+
+	accountSvc := &fakeAccountService{
+		account: &accountcontracts.AccountResponse{AccountID: 1, DocumentNumber: "123"},
+	}
+	svc := service.NewTransactionService(repo.NewRepository(db), accountSvc, newTxnLogger(t))
+
+	resp, err := svc.CreateTransaction(context.Background(), contracts.CreateTransactionRequest{
+		AccountID:       1,
+		OperationTypeID: 1,
+		Amount:          10.00,
+	})
+	if err != nil {
+		t.Fatalf("create transaction: %v", err)
+	}
+	if resp.Amount != -10.00 {
+		t.Fatalf("expected signed response amount -10.00, got %v", resp.Amount)
+	}
+
+	var txn model.Transaction
+	if err := db.First(&txn, "id = ?", resp.TransactionID).Error; err != nil {
+		t.Fatalf("fetch transaction: %v", err)
+	}
+	if txn.Amount != -1000 {
+		t.Fatalf("expected stored amount -1000, got %d", txn.Amount)
+	}
+}
+
 func TestTransactionServiceCreateTransactionInvalidAmount(t *testing.T) {
 	db := newTxnTestDB(t, t.Name())
 	if err := db.Create(&model.OperationType{ID: 4, Description: "PAYMENT", TransactionType: "credit"}).Error; err != nil {

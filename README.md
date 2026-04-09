@@ -50,7 +50,7 @@ Response:
 ```
 
 Create transaction
-Notes: `amount` must be positive and have up to 2 decimals. The signed amount is derived from `operation_type_id` (`debit` => negative, `credit` => positive).
+Notes: `amount` must be positive and have up to 2 decimals. Amounts are stored in minor units (cents) as a signed integer based on `operation_type_id` (`debit` => negative, `credit` => positive). The response `amount` reflects the signed value.
 Operation types (seeded by migrations):
 | ID | Description | Transaction Type | Meaning |
 | --- | --- | --- | --- |
@@ -92,8 +92,8 @@ TransactionManager is a simple REST API for managing accounts and their financia
 Key behaviors:
 - Accounts are uniquely identified by `document_number`.
 - Transactions require a valid `account_id` and `operation_type_id`.
-- Amounts must be positive with at most two decimal places.
-- Operation types are seeded via migrations and determine signed amount.
+- Amounts must be positive with at most two decimal places; they are persisted as signed minor units (cents).
+- Operation types are seeded via migrations and determine the sign of the stored amount and response value.
 
 **System Architecture**
 

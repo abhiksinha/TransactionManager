@@ -17,7 +17,7 @@ func upTransactionsTable(ctx context.Context, tx *sql.Tx) error {
 			id BIGSERIAL PRIMARY KEY,
 			account_id BIGINT NOT NULL REFERENCES accounts(id),
 			operation_type_id BIGINT NOT NULL REFERENCES operation_types(id),
-			amount BIGINT NOT NULL CHECK (amount > 0),
+			amount BIGINT NOT NULL,
 			event_date TIMESTAMPTZ NOT NULL DEFAULT now()
 		);
 	`)

@@ -48,10 +48,15 @@ func (s *transactionService) CreateTransaction(ctx context.Context, req contract
 		return nil, public_response.ErrValidation
 	}
 
+	signedAmountMinor := amountMinor
+	if opType.TransactionType == transactionTypeDebit {
+		signedAmountMinor = -amountMinor
+	}
+
 	txn := &model.Transaction{
 		AccountID:       req.AccountID,
 		OperationTypeID: req.OperationTypeID,
-		Amount:          amountMinor,
+		Amount:          signedAmountMinor,
 		EventDate:       nowIST(),
 	}
 
@@ -66,7 +71,7 @@ func (s *transactionService) CreateTransaction(ctx context.Context, req contract
 		TransactionID:   txn.ID,
 		AccountID:       txn.AccountID,
 		OperationTypeID: txn.OperationTypeID,
-		Amount:          signedAmount(amountMinor, opType.TransactionType),
+		Amount:          amountFromMinorUnits(txn.Amount),
 		EventDate:       txn.EventDate,
 	}, nil
 }
